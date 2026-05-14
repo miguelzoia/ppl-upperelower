@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Treino PPL + Upper/Lower</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --card: #1c1c1c;
+    --border: #2a2a2a;
+    --accent: #e8ff3c;
+    --accent2: #ff4d4d;
+    --text: #f0f0f0;
+    --muted: #666;
+    --done: #2a3d1c;
+    --done-text: #7ecf3e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .logo span { color: var(--text); }
+  .progress-bar {
+    background: var(--border);
+    border-radius: 4px;
+    height: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+  .progress-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .tabs-wrap {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tabs-wrap::-webkit-scrollbar { display: none; }
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 12px;
+    min-width: max-content;
+  }
+  .tab {
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+  }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* WEEK SCHEDULE STRIP */
+  .week-strip {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .week-strip::-webkit-scrollbar { display: none; }
+  .week-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    min-width: 44px;
+  }
+  .week-day-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .week-day-pill {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .week-day-pill.train { background: #1e2e08; color: var(--done-text); border: 1px solid #3a5a18; }
+  .week-day-pill.rest { background: #1a1a1a; color: #444; border: 1px solid #2a2a2a; }
+
+  .main { padding: 16px 16px 100px; max-width: 520px; margin: 0 auto; }
+
+  .day-panel { display: none; }
+  .day-panel.active { display: block; }
+
+  .day-header { margin-bottom: 20px; }
+  .day-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .day-tag {
+    background: var(--accent);
+    color: #000;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+  .day-tag.red { background: var(--accent2); color: #fff; }
+  .day-tag.blue { background: #3c8eff; color: #fff; }
+  .day-tag.orange { background: #ff8c3c; color: #fff; }
+  .day-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 38px;
+    letter-spacing: 2px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .day-subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .section { margin-bottom: 20px; }
+  .section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  .ex-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .ex-card:active { transform: scale(0.985); }
+  .ex-card.done {
+    background: var(--done);
+    border-color: #3a5a24;
+  }
+  .ex-card.done .ex-name { color: var(--done-text); }
+  .ex-card.done .ex-meta { color: #5a8a40; }
+  .ex-card.done::after {
+    content: '✓';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: var(--done-text);
+    font-weight: 700;
+  }
+  .ex-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .ex-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+    flex: 1;
+  }
+  .ex-sets-badge {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .ex-card.done .ex-sets-badge { color: var(--done-text); border-color: #3a5a24; background: #1a2d0f; padding-right: 10px; }
+  .ex-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 5px;
+  }
+  .ex-tip {
+    font-size: 11px;
+    color: #555;
+    margin-top: 5px;
+    font-style: italic;
+    line-height: 1.4;
+  }
+  .ex-card.done .ex-tip { color: #4a6a30; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .stat-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    margin-top: 3px;
+    text-transform: uppercase;
+  }
+
+  .done-banner {
+    background: linear-gradient(135deg, #1e3a0a, #2a5012);
+    border: 1px solid #4a8a28;
+    border-radius: 12px;
+    padding: 18px 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .done-banner.show { display: block; animation: pop 0.4s ease; }
+  .done-banner-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: var(--done-text);
+    letter-spacing: 2px;
+  }
+  .done-banner-sub { font-size: 13px; color: #6aaa40; margin-top: 4px; }
+
+  @keyframes pop {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .reset-btn {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 10px 24px;
+    border-radius: 30px;
+    cursor: pointer;
+    z-index: 50;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .scroll-hint {
+    font-size: 11px;
+    color: #3a3a3a;
+    text-align: center;
+    padding: 8px 0;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">FORCE<span>5</span></div>
+    <div style="font-size:12px;color:var(--muted);">PPL + UPPER/LOWER</div>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="globalProgress" style="width:0%"></div>
+  </div>
+  <div class="progress-label" id="globalLabel">0 exercícios concluídos hoje</div>
+</div>
+
+<!-- WEEK SCHEDULE -->
+<div class="week-strip">
+  <div class="week-day">
+    <div class="week-day-label">Seg</div>
+    <div class="week-day-pill train">Push</div>
+  </div>
+  <div class="week-day">
+    <div class="week-day-label">Ter</div>
+    <div class="week-day-pill train">Pull</div>
+  </div>
+  <div class="week-day">
+    <div class="week-day-label">Qua</div>
+    <div class="week-day-pill train">Legs</div>
+  </div>
+  <div class="week-day">
+    <div class="week-day-label">Qui</div>
+    <div class="week-day-pill rest">Descanso</div>
+  </div>
+  <div class="week-day">
+    <div class="week-day-label">Sex</div>
+    <div class="week-day-pill train">Upper</div>
+  </div>
+  <div class="week-day">
+    <div class="week-day-label">Sáb</div>
+    <div class="week-day-pill train">Lower</div>
+  </div>
+  <div class="week-day">
+    <div class="week-day-label">Dom</div>
+    <div class="week-day-pill rest">Descanso</div>
+  </div>
+</div>
+
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab active" onclick="switchDay(0)">Push</button>
+    <button class="tab" onclick="switchDay(1)">Pull</button>
+    <button class="tab" onclick="switchDay(2)">Legs</button>
+    <button class="tab" onclick="switchDay(3)">Upper</button>
+    <button class="tab" onclick="switchDay(4)">Lower</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ===== DIA 1: PUSH ===== -->
+  <div class="day-panel active" id="panel-0">
+    <div class="day-header">
+      <div class="day-badge"><span class="day-tag">Segunda</span></div>
+      <div class="day-title">PUSH</div>
+      <div class="day-subtitle">Peito · Ombro · Tríceps — Volume base</div>
+    </div>
+    <div class="stats" id="stats-0"></div>
+    <div class="done-banner" id="banner-0">
+      <div class="done-banner-title">🔥 TREINO CONCLUÍDO</div>
+      <div class="done-banner-sub">Push encerrado. Recupere bem!</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Peito</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Supino com Halteres</div><div class="ex-sets-badge">4×6-8</div></div>
+        <div class="ex-meta">Carga pesada · Descanso 2–3 min</div>
+        <div class="ex-tip">Maior amplitude que a barra. Controle na descida (2 seg). Foco em carga progressiva.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Supino Inclinado com Halteres</div><div class="ex-sets-badge">4×10-12</div></div>
+        <div class="ex-meta">Moderado · Descanso 90 seg</div>
+        <div class="ex-tip">Ângulo 30–45°. Amplitude máxima no alongamento.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Crossover / Peck Deck</div><div class="ex-sets-badge">3×12-15</div></div>
+        <div class="ex-meta">Contração máxima · Descanso 60 seg</div>
+        <div class="ex-tip">Isolar o peito. Pause 1 seg na contração.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Ombro</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Desenvolvimento Militar (Barra ou Halter)</div><div class="ex-sets-badge">4×8-10</div></div>
+        <div class="ex-meta">Pesado · Descanso 2 min</div>
+        <div class="ex-tip">Núcleo travado. Não hiperextenda a lombar.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Elevação Lateral com Halteres</div><div class="ex-sets-badge">4×15-20</div></div>
+        <div class="ex-meta">Leve-moderado · Descanso 60 seg</div>
+        <div class="ex-tip">Cotovelos levemente dobrados. Não balance o tronco.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Face Pull na Polia</div><div class="ex-sets-badge">3×15</div></div>
+        <div class="ex-meta">Saúde do ombro · Descanso 60 seg</div>
+        <div class="ex-tip">Rotação externa no final. Essencial para saúde articular.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Tríceps</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Tríceps Testa (Skull Crusher)</div><div class="ex-sets-badge">3×10-12</div></div>
+        <div class="ex-meta">Carga moderada · Descanso 90 seg</div>
+        <div class="ex-tip">Cotovelos fixos. Barra EZ recomendada.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Tríceps Corda na Polia</div><div class="ex-sets-badge">3×12-15</div></div>
+        <div class="ex-meta">Contração total · Descanso 60 seg</div>
+        <div class="ex-tip">Abra a corda no final para acionar a cabeça longa.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DIA 2: PULL ===== -->
+  <div class="day-panel" id="panel-1">
+    <div class="day-header">
+      <div class="day-badge"><span class="day-tag red">Terça</span></div>
+      <div class="day-title">PULL</div>
+      <div class="day-subtitle">Costas · Bíceps — Espessura + Largura</div>
+    </div>
+    <div class="stats" id="stats-1"></div>
+    <div class="done-banner" id="banner-1">
+      <div class="done-banner-title">🔥 TREINO CONCLUÍDO</div>
+      <div class="done-banner-sub">Pull encerrado. Costas construídas!</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Costas — Largura</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Pulldown / Barra Fixa</div><div class="ex-sets-badge">4×8-10</div></div>
+        <div class="ex-meta">Pegada pronada · Descanso 2 min</div>
+        <div class="ex-tip">Retraia as escápulas antes de puxar. Não balance.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Remada Unilateral com Halter</div><div class="ex-sets-badge">4×10-12</div></div>
+        <div class="ex-meta">Carga moderada-pesada · Descanso 90 seg</div>
+        <div class="ex-tip">Puxe o cotovelo para trás e para cima. Amplitude completa.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Costas — Espessura</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Remada Curvada com Barra</div><div class="ex-sets-badge">4×6-8</div></div>
+        <div class="ex-meta">Pesado · Descanso 2–3 min</div>
+        <div class="ex-tip">Tronco a ~45°. Barra toca o umbigo. Controle total.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Pullover com Halter</div><div class="ex-sets-badge">3×12</div></div>
+        <div class="ex-meta">Amplitude · Descanso 60 seg</div>
+        <div class="ex-tip">Foca o grande dorsal e expansão torácica.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Bíceps</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Rosca Direta com Barra EZ</div><div class="ex-sets-badge">3×10-12</div></div>
+        <div class="ex-meta">Moderado · Descanso 90 seg</div>
+        <div class="ex-tip">Cotovelos fixos nas laterais. Supinação total no topo.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Rosca Martelo com Halteres</div><div class="ex-sets-badge">3×12-15</div></div>
+        <div class="ex-meta">Braquial + bíceps · Descanso 60 seg</div>
+        <div class="ex-tip">Pegada neutra. Excelente para espessura do braço.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Rosca Concentrada ou Spider Curl</div><div class="ex-sets-badge">2×15</div></div>
+        <div class="ex-meta">Isolamento · Descanso 60 seg</div>
+        <div class="ex-tip">Finalizador. Foco total na contração do bíceps.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DIA 3: LEGS ===== -->
+  <div class="day-panel" id="panel-2">
+    <div class="day-header">
+      <div class="day-badge"><span class="day-tag blue">Quarta</span></div>
+      <div class="day-title">LEGS</div>
+      <div class="day-subtitle">Quad · Posterior · Glúteo · Panturrilha</div>
+    </div>
+    <div class="stats" id="stats-2"></div>
+    <div class="done-banner" id="banner-2">
+      <div class="done-banner-title">🔥 TREINO CONCLUÍDO</div>
+      <div class="done-banner-sub">Legs encerrado. Pernas vão doer amanhã!</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Quadríceps Dominante</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Agachamento Hack</div><div class="ex-sets-badge">4×6-8</div></div>
+        <div class="ex-meta">Pesado · Descanso 3 min</div>
+        <div class="ex-tip">Pés no meio da plataforma. Amplitude completa, desça abaixo do paralelo. Joelhos no eixo dos pés.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Leg Press 45°</div><div class="ex-sets-badge">4×10-12</div></div>
+        <div class="ex-meta">Moderado-pesado · Descanso 2 min</div>
+        <div class="ex-tip">Pés no meio da plataforma. Não trave os joelhos no topo.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Cadeira Extensora</div><div class="ex-sets-badge">3×15</div></div>
+        <div class="ex-meta">Isolamento · Descanso 60 seg</div>
+        <div class="ex-tip">Pause 1 seg no topo. Finalizador de quad.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Posterior + Glúteo</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Stiff com Barra (Deadlift Romeno)</div><div class="ex-sets-badge">4×10</div></div>
+        <div class="ex-meta">Carga moderada · Descanso 2 min</div>
+        <div class="ex-tip">Sinta o alongamento do bíceps femoral. Joelhos levemente dobrados.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Cadeira Flexora</div><div class="ex-sets-badge">3×12-15</div></div>
+        <div class="ex-meta">Controle total · Descanso 90 seg</div>
+        <div class="ex-tip">Não deixe os quadris subirem da cadeira.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Hip Thrust na Máquina</div><div class="ex-sets-badge">4×12</div></div>
+        <div class="ex-meta">Glúteo máximo · Descanso 90 seg</div>
+        <div class="ex-tip">Contração total no topo. Squeeze por 2 seg. Carga controlada na máquina.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Panturrilha</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Panturrilha em Pé (Calf Raise)</div><div class="ex-sets-badge">4×15-20</div></div>
+        <div class="ex-meta">Amplitude máxima · Descanso 60 seg</div>
+        <div class="ex-tip">Calcâneo desce abaixo do degrau. Pause no topo.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DIA 4: UPPER ===== -->
+  <div class="day-panel" id="panel-3">
+    <div class="day-header">
+      <div class="day-badge"><span class="day-tag orange">Sexta</span></div>
+      <div class="day-title">UPPER</div>
+      <div class="day-subtitle">Peito · Costas · Ombro · Braços — Intensidade alta</div>
+    </div>
+    <div class="stats" id="stats-3"></div>
+    <div class="done-banner" id="banner-3">
+      <div class="done-banner-title">🔥 TREINO CONCLUÍDO</div>
+      <div class="done-banner-sub">Upper encerrado. Parte superior castigada!</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Peito + Costas (Supersets)</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Supino Inclinado c/ Halteres</div><div class="ex-sets-badge">4×10</div></div>
+        <div class="ex-meta">Superset A1 · Descanso 90 seg após A2</div>
+        <div class="ex-tip">Execute imediatamente com A2 (Remada).</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Remada Supinada na Máquina</div><div class="ex-sets-badge">4×10</div></div>
+        <div class="ex-meta">Superset A2 · Descanso 90 seg</div>
+        <div class="ex-tip">Emparelha antagonistas. Máximo de eficiência.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Crucifixo com Halteres</div><div class="ex-sets-badge">3×12-15</div></div>
+        <div class="ex-meta">Superset B1</div>
+        <div class="ex-tip">Foco no alongamento do peito. Cotovelo levemente dobrado.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Puxada Aberta na Polia</div><div class="ex-sets-badge">3×12-15</div></div>
+        <div class="ex-meta">Superset B2 · Descanso 90 seg</div>
+        <div class="ex-tip">Pegada larga. Puxe para o peito.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Ombro</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Arnold Press</div><div class="ex-sets-badge">4×10-12</div></div>
+        <div class="ex-meta">Todas as cabeças · Descanso 90 seg</div>
+        <div class="ex-tip">Rotação completa do ombro. Excelente para desenvolvimento total.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Elevação Lateral na Polia (unilateral)</div><div class="ex-sets-badge">3×15</div></div>
+        <div class="ex-meta">Tensão constante · Descanso 60 seg</div>
+        <div class="ex-tip">Cabo baixo na polia. Tensão o exercício inteiro vs haltere.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Braços (Superset)</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Rosca Scott com Barra EZ</div><div class="ex-sets-badge">3×10-12</div></div>
+        <div class="ex-meta">Superset C1</div>
+        <div class="ex-tip">Pico de bíceps. Cotovelos apoiados no banco.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Tríceps Francês c/ Halter</div><div class="ex-sets-badge">3×10-12</div></div>
+        <div class="ex-meta">Superset C2 · Descanso 90 seg</div>
+        <div class="ex-tip">Cabeça longa. Halter atrás da cabeça. Cotovelos fixos.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DIA 5: LOWER ===== -->
+  <div class="day-panel" id="panel-4">
+    <div class="day-header">
+      <div class="day-badge"><span class="day-tag blue">Sábado</span></div>
+      <div class="day-title">LOWER</div>
+      <div class="day-subtitle">Posterior Dominante · Glúteo · Quad · Core</div>
+    </div>
+    <div class="stats" id="stats-4"></div>
+    <div class="done-banner" id="banner-4">
+      <div class="done-banner-title">🔥 TREINO CONCLUÍDO</div>
+      <div class="done-banner-sub">Lower encerrado. Força máxima construída!</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Força — Posterior Dominante</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Levantamento Terra Romeno</div><div class="ex-sets-badge">4×8-10</div></div>
+        <div class="ex-meta">Moderado-pesado · Descanso 2–3 min</div>
+        <div class="ex-tip">Quadril para trás, costas neutras. Foco total no isquiotibial e glúteo. Menos técnico que o convencional.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Leg Press com Pés Altos</div><div class="ex-sets-badge">4×10-12</div></div>
+        <div class="ex-meta">Glúteo + posterior · Descanso 2 min</div>
+        <div class="ex-tip">Pés no terço superior da plataforma. Descida lenta. Excelente para glúteo + isquiotibial.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Glúteo + Posterior</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Agachamento Goblet com Halter</div><div class="ex-sets-badge">4×12</div></div>
+        <div class="ex-meta">Glúteo + quad · Descanso 90 seg</div>
+        <div class="ex-tip">Segure o halter no peito. Pés afastados. Descida controlada abaixo do paralelo.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Stiff com Halteres</div><div class="ex-sets-badge">3×12</div></div>
+        <div class="ex-meta">Isquiotibial · Descanso 90 seg</div>
+        <div class="ex-tip">Joelhos levemente dobrados. Quadril para trás. Foco no alongamento do posterior.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Abdução de Quadril na Máquina</div><div class="ex-sets-badge">3×15-20</div></div>
+        <div class="ex-meta">Glúteo médio · Descanso 60 seg</div>
+        <div class="ex-tip">Essencial para estabilidade do quadril e volume lateral do glúteo.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Core</div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Prancha com Carga</div><div class="ex-sets-badge">3×45–60s</div></div>
+        <div class="ex-meta">Core anterior · Descanso 60 seg</div>
+        <div class="ex-tip">Coloque anilha nas costas para progredir. Mantenha o quadril neutro.</div>
+      </div>
+      <div class="ex-card" onclick="toggleDone(this)">
+        <div class="ex-top"><div class="ex-name">Panturrilha Sentado</div><div class="ex-sets-badge">4×15-20</div></div>
+        <div class="ex-meta">Sóleo · Descanso 60 seg</div>
+        <div class="ex-tip">Músculo diferente do calf em pé. Não negligencie.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-hint">— Toque nos exercícios para marcar como feito —</div>
+</div>
+
+<button class="reset-btn" onclick="resetDay()">↺ Resetar dia</button>
+
+<script>
+  let currentDay = 0;
+  const totalDays = 5;
+
+  function switchDay(idx) {
+    document.querySelectorAll('.day-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + idx).classList.add('active');
+    document.querySelectorAll('.tab')[idx].classList.add('active');
+    currentDay = idx;
+    updateStats(idx);
+    updateGlobalProgress();
+    document.querySelectorAll('.tab')[idx].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
+
+  function toggleDone(card) {
+    card.classList.toggle('done');
+    updateStats(currentDay);
+    updateGlobalProgress();
+    checkDayComplete(currentDay);
+  }
+
+  function updateStats(idx) {
+    const panel = document.getElementById('panel-' + idx);
+    const cards = panel.querySelectorAll('.ex-card');
+    const done = panel.querySelectorAll('.ex-card.done').length;
+    const total = cards.length;
+
+    let totalSets = 0;
+    cards.forEach(c => {
+      const badge = c.querySelector('.ex-sets-badge').textContent;
+      const match = badge.match(/(\d+)×/);
+      if (match) totalSets += parseInt(match[1]);
+    });
+
+    const statsEl = document.getElementById('stats-' + idx);
+    statsEl.innerHTML = `
+      <div class="stat-box"><div class="stat-num">${done}</div><div class="stat-label">Feitos</div></div>
+      <div class="stat-box"><div class="stat-num">${total - done}</div><div class="stat-label">Restam</div></div>
+      <div class="stat-box"><div class="stat-num">${totalSets}</div><div class="stat-label">Séries</div></div>
+    `;
+  }
+
+  function checkDayComplete(idx) {
+    const panel = document.getElementById('panel-' + idx);
+    const cards = panel.querySelectorAll('.ex-card');
+    const done = panel.querySelectorAll('.ex-card.done').length;
+    const banner = document.getElementById('banner-' + idx);
+    if (done === cards.length && cards.length > 0) {
+      banner.classList.add('show');
+      banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      banner.classList.remove('show');
+    }
+  }
+
+  function updateGlobalProgress() {
+    const panel = document.getElementById('panel-' + currentDay);
+    const cards = panel.querySelectorAll('.ex-card');
+    const done = panel.querySelectorAll('.ex-card.done').length;
+    const pct = cards.length > 0 ? Math.round((done / cards.length) * 100) : 0;
+    document.getElementById('globalProgress').style.width = pct + '%';
+    document.getElementById('globalLabel').textContent = `${done} de ${cards.length} exercícios concluídos hoje`;
+  }
+
+  function resetDay() {
+    const panel = document.getElementById('panel-' + currentDay);
+    panel.querySelectorAll('.ex-card.done').forEach(c => c.classList.remove('done'));
+    document.getElementById('banner-' + currentDay).classList.remove('show');
+    updateStats(currentDay);
+    updateGlobalProgress();
+  }
+
+  for (let i = 0; i < totalDays; i++) updateStats(i);
+  updateGlobalProgress();
+</script>
+</body>
+</html>
